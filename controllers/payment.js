@@ -55,6 +55,9 @@ const checkWebhook = async (req, res) => {
         return
     }
 
+    console.log(isWebhookValid)
+    console.log(req.body.payload.payment.entity)
+
     const {order_id, captured, notes:{type}} = req.body.payload.payment.entity
 
     // update the payment
@@ -74,6 +77,8 @@ const verifyPayment = async(req, res) => {
     const loggedInUser = req.user
 
     const thePayment = await Payment.findOne({userId: loggedInUser._id, status: "successful"})
+
+    console.log(loggedInUser.name, "  ", thePayment?.status)
 
     res.status(200).json({paymentReceived: thePayment?.status})
 }
