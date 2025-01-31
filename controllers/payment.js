@@ -2,6 +2,8 @@ const instance = require("../config/razorpay")
 const { memberTypes, RP_KEY } = require("../constants")
 const createError = require("../errorClass")
 const Payment = require("../models/payment")
+const {validateWebhookSignature} = require('razorpay/dist/utils/razorpay-utils')
+const { findOne, findById } = require("../models/post")
 
 const createOrder = async (req, res) => {
     const {type} = req.params
@@ -42,10 +44,39 @@ const createOrder = async (req, res) => {
 }
 
 const checkWebhook = async (req, res) => {
-    console.log(req.body)
+    // check header for rp signature
+    const webhookSignature = req.get["X-Razorpay-Signature"]
+
+    // validate webhook
+    const isWebhookValid = validateWebhookSignature(JSON.stringify(req.body), webhookSignature, process.env.WEBHOOK_SECRET)
+
+    if (!isWebhookValid){
+        createError("webhook is not valid", 400)
+        return
+    }
+
+    const {order_id, captured, notes:{type}} = req.body.payload.payment.entity
+
+    // update the payment
+    const thePayment = await findOne({orderId: order_id})
+    thePayment.status = captured ? "successful" : "failed"
+
+    await thePayment.save()
+
+    // update the user from payment
+    const theUser = await findById(thePayment.userId)
+    theUser.role = theUser.role == "admin" ? "admin" : type
 
     res.status(200).json({msg : "ok"})
 }
 
+const verifyPayment = async(req, res) => {
+    const loggedInUser = req.user
 
-module.exports = {createOrder, checkWebhook}
+    const thePayment = await Payment.findOne({userId: loggedInUser._id, status: "successful"})
+
+    res.status(200).json({paymentReceived: thePayment?.status})
+}
+
+
+module.exports = {createOrder, checkWebhook, verifyPayment}
