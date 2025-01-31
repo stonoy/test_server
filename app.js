@@ -35,7 +35,7 @@ app.get("*", (req, res) => {
   });
 
 // not found
-app.use((req, res) => {
+app.use("*", (req, res) => {
     res.send("not found")
 })
 
