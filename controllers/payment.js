@@ -44,24 +44,24 @@ const createOrder = async (req, res) => {
 }
 
 const checkWebhook = async (req, res) => {
-    console.log(req.body)
+    // console.log(req.body)
     // check header for rp signature
     const webhookSignature = req.get["X-Razorpay-Signature"] || req.get("X-Razorpay-Signature")
 
-    console.log(webhookSignature)
+    // console.log(webhookSignature)
 
     // validate webhook
     const isWebhookValid = validateWebhookSignature(JSON.stringify(req.body), webhookSignature, process.env.WEBHOOK_SECRET)
 
-    console.log(isWebhookValid)
-    
+    // console.log(isWebhookValid)
+
     if (!isWebhookValid){
         createError("webhook is not valid", 400)
         return
     }
 
     
-    console.log(req.body.payload.payment.entity)
+    // console.log(req.body.payload.payment.entity)
 
     const {order_id, captured, notes:{type}} = req.body.payload.payment.entity
 
@@ -74,6 +74,10 @@ const checkWebhook = async (req, res) => {
     // update the user from payment
     const theUser = await findById(thePayment.userId)
     theUser.role = theUser.role == "admin" ? "admin" : type
+
+    await theUser.save()
+
+    console.log(thePayment, "   ", theUser)
 
     res.status(200).json({msg : "ok"})
 }
