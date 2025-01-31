@@ -4,6 +4,7 @@ const createError = require("../errorClass")
 const Payment = require("../models/payment")
 const {validateWebhookSignature} = require('razorpay/dist/utils/razorpay-utils')
 const { findOne, findById } = require("../models/post")
+const User = require("../models/users")
 
 const createOrder = async (req, res) => {
     const {type} = req.params
@@ -66,18 +67,16 @@ const checkWebhook = async (req, res) => {
     const {order_id, captured, notes:{type}} = req.body.payload.payment.entity
 
     // update the payment
-    const thePayment = await findOne({orderId: order_id})
+    const thePayment = await Payment.findOne({orderId: order_id})
     thePayment.status = captured ? "successful" : "failed"
 
     await thePayment.save()
 
     // update the user from payment
-    const theUser = await findById(thePayment.userId)
+    const theUser = await User.findById(thePayment.userId)
     theUser.role = theUser.role == "admin" ? "admin" : type
 
     await theUser.save()
-
-    console.log(thePayment, "   ", theUser)
 
     res.status(200).json({msg : "ok"})
 }
@@ -87,7 +86,6 @@ const verifyPayment = async(req, res) => {
 
     const thePayment = await Payment.findOne({userId: loggedInUser._id, status: "successful"})
 
-    console.log(loggedInUser.name, "  ", thePayment?.status)
 
     res.status(200).json({paymentReceived: thePayment?.status})
 }
