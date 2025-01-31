@@ -44,6 +44,7 @@ const createOrder = async (req, res) => {
 }
 
 const checkWebhook = async (req, res) => {
+    console.log(req.body)
     // check header for rp signature
     const webhookSignature = req.get["X-Razorpay-Signature"]
 
